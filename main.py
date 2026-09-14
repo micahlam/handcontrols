@@ -26,3 +26,9 @@ def change_volume(amount):
 	else:
 		step = "5%+" if amount > 0 else "5%-"
 		subprocess.run(["amixer", "-q", "sset", "Master", step], check=False)
+
+
+hands_module = mp.solutions.hands
+draw = mp.solutions.drawing_utils
+camera = cv2.VideoCapture(0)
+last_change = 0.0
