@@ -45,3 +45,34 @@ with hands_module.Hands(
 
 		frame = cv2.flip(frame, 1)
 		result = hands.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+
+		if result.multi_hand_landmarks:
+			hand = result.multi_hand_landmarks[0]
+			thumb = hand.landmark[hands_module.HandLandmark.THUMB_TIP]
+			index = hand.landmark[hands_module.HandLandmark.INDEX_FINGER_TIP]
+			distance = math.hypot(thumb.x - index.x, thumb.y - index.y)
+
+			# Pinched fingers lower volume; separated fingers raise it.
+			direction = 1 if distance > 0.22 else -1 if distance < 0.12 else 0
+			now = time.monotonic()
+			if direction and now - last_change >= 0.2:
+				change_volume(direction)
+				last_change = now
+
+			cv2.line(
+				frame,
+				(int(thumb.x * frame.shape[1]), int(thumb.y * frame.shape[0])),
+				(int(index.x * frame.shape[1]), int(index.y * frame.shape[0])),
+				(0, 255, 0),
+				3,
+			)
+			cv2.putText(frame, f"Distance: {distance:.2f}", (20, 40),
+						cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+			draw.draw_landmarks(frame, hand, hands_module.HAND_CONNECTIONS)
+
+		cv2.imshow("Hand Volume Control - press Q to quit", frame)
+		if cv2.waitKey(1) & 0xFF == ord("q"):
+			break
+
+camera.release()
+cv2.destroyAllWindows()
